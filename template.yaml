@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  EnvType:
+    Type: String
+    Default: test
+    AllowedValues:
+      - test
+      - prod
+    Description: "Deployment environment"
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+
+Resources:
+  EventLoggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-logger/
+      FunctionName: !Sub "eventLogger-${EnvType}"
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      MemorySize: 128
+      Architectures:
+        - x86_64
+      AutoPublishAlias: !Ref EnvType
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "EventLoggerAPI-${EnvType}"
+      StageName: !Ref EnvType
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: !Sub "EventLoggerAPI-${EnvType}"
+        paths:
+          /log:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: "POST"
+                type: "aws_proxy"
+                credentials: !GetAtt ApiGatewayInvokeRole.Arn
+                uri:
+                  Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EventLoggerFunction.Arn}:${EnvType}/invocations"
+
+  ApiGatewayInvokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "APIGatewayInvokeLambdaRole-${EnvType}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "apigateway.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "InvokeLambdaPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "lambda:InvokeFunction"
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:eventLogger-${EnvType}:${EnvType}"
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:eventLogger-${EnvType}"
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway URL for the deployed stage"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvType}/log"
+
+  LambdaFunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt EventLoggerFunction.Arn
