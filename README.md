@@ -17,7 +17,7 @@
 
 ## 📋 Overview
 
-Este repositorio contiene un proyecto educativo que demuestra cómo construir una API serverless en AWS utilizando **AWS SAM (Serverless Application Model)**. El proyecto implementa un endpoint REST simple que retorna información sobre la función Lambda ejecutada, demostrando la integración entre API Gateway y Lambda con versionado automático mediante aliases.
+Este repositorio contiene un proyecto en el cual se construye una API serverless en AWS utilizando **AWS SAM (Serverless Application Model)**. El proyecto implementa un endpoint REST simple que retorna información sobre la función Lambda ejecutada, demostrando la integración entre API Gateway y Lambda con versionado automático mediante aliases.
 
 **Flujo de trabajo:**
 1. Cliente hace una petición POST al endpoint `/log`
@@ -1055,5 +1055,6 @@ Después del deployment:
 - [ ] Costo estimado revisado en Cost Explorer
 
 ---
+
 
 
